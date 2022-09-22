@@ -1,13 +1,19 @@
 import streamlit as st
+import graphviz as graphviz
 from constants import *
 from neo4j_controller import Neo4jController
-import graphviz as graphviz
+# Example of using Neo4j with less boilerplate
+# from neo4j_manager import Neo4jManager
 
-# Create a Neo4jRepository object
-n4j = Neo4jController(st.secrets['neo4j_uri'], st.secrets['neo4j_user'], st.secrets['neo4j_password']) 
 
 # Display app title
 st.title("Meetup Dashboard")
+
+# Create a Neo4jRepository object
+n4j = Neo4jController(
+    st.secrets['neo4j_uri'], 
+    st.secrets['neo4j_user'], 
+    st.secrets['neo4j_password']) 
 
 # Meetup selection
 meetups = n4j.get_meetups()
