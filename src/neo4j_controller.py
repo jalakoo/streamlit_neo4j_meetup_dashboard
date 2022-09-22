@@ -1,6 +1,13 @@
-from neo4j_utils import Neo4jConnection
+from neo4j_connection import Neo4jConnection
 
-class Neo4jRepository():
+class Neo4jController():
+    """Abstraction for converting requests
+    to Cypher commands to be executed by Neo4j
+    driver.
+
+    A class like this should be edited to
+    meet your own needs.
+    """
     
     def __init__(self, uri, user, pwd):
         try:

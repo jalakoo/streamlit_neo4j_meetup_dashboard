@@ -1,7 +1,14 @@
 from neo4j import GraphDatabase, Query
 
 class Neo4jConnection:
+    """General driver and session handling class.
+    Takes cypher command strings and args and then
+    executes them using the Neo4j driver.
 
+    This class shouldn't require any modification
+    to be used in other projects.
+    """
+    
     def __init__(self, uri, user, pwd):
         self.__uri = uri
         self.__user = user
@@ -17,6 +24,7 @@ class Neo4jConnection:
         if self.__driver is not None:
             self.__driver.close()
 
+    # Alternate to using session.read_transaction()
     def query(self, query, **kwargs):
         assert self.__driver is not None, "Driver not initialized!"
         try:
