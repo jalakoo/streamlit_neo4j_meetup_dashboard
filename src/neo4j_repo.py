@@ -14,67 +14,44 @@ class Neo4jRepository():
             RETURN m.name as name
         """
         result = self.conn.query(query)
-        print(f"get_meetups: {result}")
         return [record["name"] for record in result]
 
-    def attendee_exists(self, email):
+    def num_attendees(self, meetup_name):
         query = """
-            MATCH (a:Attendee {email: $email})
-            RETURN a.name as name
+            MATCH (a:Attendee)-[:ATTENDED]->(m:Meetup {name: $meetup_name})
+            RETURN count(a) as num_attendees
         """
-        result = self.conn.query(query, email=email)
-        print(f"attendee_exists: {result}")
-        if result is None:
-            return False
-        return True
+        result = self.conn.query(query, meetup_name=meetup_name)
+        return result[0]["num_attendees"]
 
-    def delete_attendee(self, email):
+    def num_unique_skills(self, meetup_name):
         query = """
-            MATCH (a:Attendee {email: $email})
-            DETACH DELETE a
+            MATCH (m:Meetup {name: $meetup_name})<-[:ATTENDED]-(a:Attendee)-[:KNOWS]->(s:Skill)
+            RETURN count(distinct s) as num_skills
         """
-        self.conn.write(query, email=email)
+        result = self.conn.query(query, meetup_name=meetup_name)
+        return result[0]["num_skills"]
 
-
-    def add_attendee(
-        self, 
-        name_first: str, 
-        name_last: str, 
-        email: str,
-        meetup_name: str,
-        meetup_date: str,
-        skills: list = []):
-
-        # Set meetup name
-        meetup_uid = f"{meetup_name}_{meetup_date}"
-
-        # Add attendee
+    def avg_skills_per_attendee(self, meetup_name):
         query = """
-            MERGE (m:Meetup {name: $meetup_name})
-            MERGE (a:Attendee {name: $name, first_name: $name_first, last_name: $name_last, email: $email})
-            MERGE (a)-[:ATTENDED {date: $date}]->(m)
-            RETURN a
+            MATCH (m:Meetup {name: $meetup_name})<-[:ATTENDED]-(a:Attendee)-[:KNOWS]->(s:Skill)
+            RETURN avg(size((a)-[:KNOWS]->())) as avg_skills
         """
-        last_initial = name_last[:1]
-        fullname = f"{name_first} {last_initial}"
+        result = self.conn.query(query, meetup_name=meetup_name)
+        return result[0]["avg_skills"]
 
-        # Add attendee
-        self.conn.write(query, meetup_uid=meetup_uid, meetup_name=meetup_name, date=meetup_date, name=fullname, name_first=name_first, name_last=name_last, email=email)
+    def get_graph_data(self, meetup_name):
+        query = """
+            MATCH (m:Meetup {name: $meetup_name})<-[:ATTENDED]-(a:Attendee)-[:KNOWS]->(s:Skill)
+            RETURN a.name as attendee, s.name as skill
+        """
+        result = self.conn.query(query, meetup_name=meetup_name)
+        return result
 
-        # Update to create & add skills relationships
-        # TODO: Make more efficient please
-        for skill in skills:
-            print(f"Adding skill: {skill}...")
-            query = """
-                MERGE (s:Skill {name: $skill})
-                """
-            self.conn.write(query, skill=skill)
-
-            print(f"Adding skill relationship between: {email} + {skill} ...")
-            query = """    
-                MATCH (a:Attendee {email: $email}),(s:Skill {name: $skill})
-                MERGE (a)-[r:KNOWS]->(s)
-                RETURN a,r, s
-            """
-            self.conn.write(query, email=email, skill=skill)
-        
+    def get_attendees(self, meetup_name):
+        query = """
+            MATCH (m:Meetup {name: $meetup_name})<-[:ATTENDED]-(a:Attendee)
+            RETURN a.name as attendee
+        """
+        result = self.conn.query(query, meetup_name=meetup_name)
+        return result
